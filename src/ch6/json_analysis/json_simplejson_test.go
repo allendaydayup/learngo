@@ -1,0 +1,49 @@
+package json_analysis
+
+import (
+    "bytes"
+    "fmt"
+    "github.com/bitly/go-simplejson"
+    jsoniter "github.com/json-iterator/go"
+    "github.com/tidwall/gjson"
+    "log"
+    "testing"
+)
+
+func TestSimplejson(t *testing.T) {
+    buf := bytes.NewBuffer([]byte(`{
+        "test": {
+            "array": [1, "2", 3],
+            "arraywithsubs": [
+                {"subkeyone": 1},
+                {"subkeytwo": 2, "subkeythree": 3}
+            ],
+            "bignum": 8000000000
+        }
+    }`))
+    js, err := simplejson.NewFromReader(buf)
+    if err != nil || js == nil {
+        log.Fatal("something wrong when call NewFromReader")
+    }
+    fmt.Println(js) //&{map[test:map[array:[1 2 3] arraywithsubs:[map[subkeyone:1] map[subkeytwo:2 subkeythree:3]] bignum:8000000000]]}
+
+    arr, err := js.Get("test").Get("array").Array()
+    if err != nil || arr == nil {
+        log.Fatal("something wrong when call Get and Array")
+    }
+    fmt.Println(arr) //[1 2 3]
+
+    //使用下面的Must类方法就不用判断而err了
+    fmt.Println(js.Get("test").Get("array").MustArray()) //[1 2 3]
+
+    fmt.Println(js.Get("test").Get("arraywithsubs").GetIndex(0).MustMap()) //map[subkeyone:1]
+
+    fmt.Println(js.Get("test").Get("bignum").MustInt64()) //8000000000
+
+    fmt.Println(js.Get("test").Get("array").GetIndex(1).Int())
+
+    val := []byte(`{"ID":1,"Name":"Reds","Colors":["Crimson","Red","Ruby","Maroon"]}`)
+    fmt.Println(jsoniter.Get(val, "Colors", 0).ToString())
+
+    fmt.Println(gjson.Get(string(val), "Colors.3").String())
+}
